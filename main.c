@@ -125,15 +125,16 @@ float elapsed_ms(const struct timespec *start, const struct timespec *end) {
 stats_t g_stat = {0};
 
 int main (void) {
-    ip_header_t ip_header = {0};
+    //ip_header_t ip_header = {0};
     udp_message_t udp_message = {0};
     struct timespec start, end;
+    uint8_t ttl = 2;
 
     char ip[INET_ADDRSTRLEN];
     get_src_ip_for_dest("8.8.8.8", ip, sizeof(ip));
     printf("Source IP would be: %s\n", ip);
 
-    ip_header.ver = 4;
+    /*ip_header.ver = 4;
     ip_header.header_len = 5;  // 5 * 4bytes
     ip_header.ttl = 2;  // TTL 1 for testing, it will expire immediately
     ip_header.protocol = 17;
@@ -141,13 +142,13 @@ int main (void) {
     ip_header.ip_src.s_addr = inet_addr(ip);
 
     ip_header.total_len = htons(20 + sizeof(udp_message_t));  // IP header size
-    ip_header.chksum = checksum(&ip_header, sizeof(ip_header), 0);
+    ip_header.chksum = checksum(&ip_header, sizeof(ip_header), 0);*/
 
     udp_message.src_port = htons(35073);
     udp_message.dst_port = htons(33434);
     udp_message.len = htons(sizeof(udp_message_t));
     memcpy(&(udp_message.data), "@ABCDEFGHIJKLMNOPQRSTUVWXYZABCDE", 32);
-    udp_message.chksum = checksum(&udp_message, sizeof(udp_message_t), 0);
+    udp_message.chksum = 0; //checksum(&udp_message, sizeof(udp_message_t), 0);
 
     int sock_udp, sock_icmp;
 
@@ -161,7 +162,7 @@ int main (void) {
     }
 
     int one = 1;
-    if (setsockopt(sock_udp, IPPROTO_IP, IP_TTL, &ip_header.ttl, sizeof(ip_header.ttl)) < 0) {
+    if (setsockopt(sock_udp, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl)) < 0) {
         perror("setsockopt");
         return 1;
     }
@@ -196,14 +197,16 @@ int main (void) {
     struct sockaddr_in dst;
     memset(&dst, 0, sizeof(dst));
     dst.sin_family = AF_INET;
-    dst.sin_addr.s_addr = ip_header.ip_dest.s_addr;
+    dst.sin_addr.s_addr = inet_addr("8.8.8.8");
+    dst.sin_port = htons(33434);
     socklen_t dstlen = sizeof(dst);
     uint8_t packet[1500];
-    memcpy(packet, &ip_header, sizeof(ip_header_t));
-    memcpy(packet + sizeof(ip_header_t), &udp_message, sizeof(udp_message_t));
+    //memcpy(packet, &ip_header, sizeof(ip_header_t));
+    memcpy(packet, &udp_message, sizeof(udp_message_t));
 
-    print_bytes(packet, sizeof(ip_header));
-    if (sendto(sock_udp, (void *)(packet + sizeof(ip_header_t)), sizeof(udp_message_t), 0, (struct sockaddr *)(&dst), sizeof(dst)) < 0) {
+    print_bytes(udp_message.data, sizeof(udp_message.data));
+    if (sendto(sock_udp, (void *)(&(udp_message.data)), sizeof(udp_message.data), 0, (struct sockaddr *)(&dst), sizeof(dst)) < 0)
+    {
         perror("sendto");
     } else {
         printf("Sent IP header\n");
