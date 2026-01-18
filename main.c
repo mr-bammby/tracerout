@@ -7,6 +7,13 @@
 #include <string.h>
 #include <time.h>
 #include <sys/select.h>
+#include <sys/types.h>
+#include <netdb.h>
+
+//#define NI_MAXHOST      1025
+//#define NI_MAXSERV      32
+//#define NI_NAMEREQD 0x04
+
 
 typedef struct {
     struct timespec start;
@@ -204,6 +211,41 @@ int main (void) {
     //memcpy(packet, &ip_header, sizeof(ip_header_t));
     memcpy(packet, &udp_message, sizeof(udp_message_t));
 
+/* input */
+    char hbuf[NI_MAXHOST];
+
+    if (getnameinfo((struct sockaddr*)&dst, sizeof(dst), hbuf, sizeof(hbuf), NULL, 0, NI_NAMEREQD))
+	    printf("could not resolve hostname");
+    printf("host=%s\n", hbuf);
+
+
+    struct addrinfo* res = NULL;
+    //struct addrinfo *result = NULL;
+    //struct addrinfo *ptr = NULL;
+    struct addrinfo hints;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;// AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+
+    getaddrinfo(hbuf, "443", &hints, &res);
+
+    struct addrinfo* i;
+
+    for(i=res; i!=NULL; i=i->ai_next)
+    {
+    char str[INET6_ADDRSTRLEN];
+    if (i->ai_addr->sa_family == AF_INET) 
+    {
+        struct sockaddr_in *p = (struct sockaddr_in *)i->ai_addr;
+        printf("IP4: %s\n", inet_ntop(AF_INET, &p->sin_addr, str, sizeof(str)));
+    } else if (i->ai_addr->sa_family == AF_INET6) 
+    {
+        struct sockaddr_in6 *p = (struct sockaddr_in6 *)i->ai_addr;
+        printf("IP6: %s\n", inet_ntop(AF_INET6, &p->sin6_addr, str, sizeof(str)));
+    }
+    }
+
     print_bytes(udp_message.data, sizeof(udp_message.data));
     if (sendto(sock_udp, (void *)(&(udp_message.data)), sizeof(udp_message.data), 0, (struct sockaddr *)(&dst), sizeof(dst)) < 0)
     {
@@ -211,6 +253,7 @@ int main (void) {
     } else {
         printf("Sent IP header\n");
     }
+
 
     // Timeout setup
     struct timeval timeout;
