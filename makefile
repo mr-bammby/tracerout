@@ -4,20 +4,20 @@ NAME = ft_traceroute
 # Compiler and basic flags
 CC = gcc
 CFLAGS = -Wall -Wextra -Werror
-CINC = -I./main/inc
+CINC = -I./inc
 
 # Build output directory for object files
 OBJDIR = build
 
 # All source files from your tree
-SRCS = main/src/main.c \
-       main/src/args_handler.c \
-       main/src/flag_handler_help.c \
-       main/src/flags_handler.c \
-       main/src/init.c \
-       main/src/transmit.c \
-       main/src/receive.c \
-       main/src/utils.c 
+SRCS = src/main.c \
+       src/args_handler.c \
+       src/flag_handler_help.c \
+       src/flags_handler.c \
+       src/init.c \
+       src/transmit.c \
+       src/receive.c \
+       src/utils.c 
 # Object files go into the build directory, preserving source subpaths
 OBJS = $(SRCS:%.c=$(OBJDIR)/%.o)
 
@@ -26,7 +26,7 @@ all: $(NAME)
 
 # Rule to link the object files into the final executable
 $(NAME): $(OBJS)
-	$(CC) $(CFLAGS) -o $(NAME) $(OBJS)
+	$(CC) $(CFLAGS) -o $(OBJDIR)/$(NAME) $(OBJS)
 
 # Rule to compile source files into object files in build directory
 $(OBJDIR)/%.o: %.c
